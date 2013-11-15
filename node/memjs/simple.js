@@ -1,3 +1,4 @@
+// binary protocol
 var memjs = require('memjs');
 
 var cl = new memjs.Client.create('localhost');
