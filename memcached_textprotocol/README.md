@@ -9,8 +9,11 @@ getで入ってない時の処理 -> END
 # COMMAND
 
 ## set,add,replace,append,prepend
+
+```
 <command> <key> <flags> <exptime> <bytes>\r\n
 <data>\r\n
+```
 
 ### response
 
@@ -19,7 +22,10 @@ STORED\r\n
 ```
 
 ## get
+
+```
 <command> <key>\r\n
+```
 
 ### response
 
@@ -30,7 +36,10 @@ END\r\n
 ```
 
 ## inc,dec
+
+```
 <command> <key> <value>\r\n
+```
 
 ### response
 
@@ -39,7 +48,10 @@ END\r\n
 ```
 
 ## stats
+
+```
 <command>\r\n
+```
 
 ### response
 
