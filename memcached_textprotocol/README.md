@@ -3,7 +3,8 @@ Memcached TextProtocol
 練習用のプロジェクトなので実際に使わないほうがいいです
 
 # ToDo
-getで入ってない時の処理 -> END
+スタックが潰れる問題 10000回で
+RangeError: Maximum call stack size exceeded
 
 
 # COMMAND

@@ -6,9 +6,13 @@ var MESSAGE_MARKER = exports.MESSAGE_MARKER = {
 };
 
 var CMD = exports.CMD = {
-    GET:'get',
-    SET:'set',
     DELETE:'delete',
+    SET:'set',
+    GET:'get',
+    INC:'incr',
+    DEC:'decr',
+    PREPEND:'prepend',
+    APPEND:'append',
     STATS:'stats',
 };
 

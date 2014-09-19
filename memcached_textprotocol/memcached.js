@@ -17,8 +17,10 @@ var TextProtocol = module.exports = function(port, host){
     this.port = port;
     this.callbacks = [];
     this.cl = new net.Socket();
+    this.sendq = [];
     this.encode = 'utf8';
     this.compress = FLAGS.UNCOMPRESS;
+    this.isConnected = false;
 
     var self = this;
     this.cl.on('error', function(err){
@@ -34,10 +36,12 @@ var TextProtocol = module.exports = function(port, host){
         }
     });
     this.cl.on('connect', function(){
+        self.isConnected = true;
         self.emit('connect');
         console.log('connected');
     });
     this.cl.on('close', function(){
+        self.isConnected = false;
         self.emit('close');
         console.log('cl-> connection is closed');
     });
@@ -49,6 +53,18 @@ TextProtocol.prototype.connect = function(callback){
 }
 TextProtocol.prototype.end = function(){
     this.cl.end();
+}
+TextProtocol.prototype._sendtext = function(text){
+    this.sendq.push(new Buffer(text));
+}
+TextProtocol.prototype._sendbinary = function(buffer){
+    this.sendq.push(buffer);
+}
+TextProtocol.prototype.send = function(){
+    var sendq = Buffer.concat(this.sendq);
+    this.emit('send', sendq);
+    this.sendq = [];
+    return this.cl.write(sendq);
 }
 
 TextProtocol.prototype.set = function( key, val, expire, callback ){
@@ -64,48 +80,82 @@ TextProtocol.prototype.set = function( key, val, expire, callback ){
         break;
     }
     if(!Buffer.isBuffer(val)){
-        val = new Buffer(val);
+        val = new Buffer(val.toString());
     }
-    var cmd = [CMD.SET, key, this.compress, expire, val.length].join(MESSAGE_MARKER.SPLIT);
+    var cmd = [CMD.SET, key, this.compress, expire, val.length].
+        map(function(v){return v.toString()}).
+        join(MESSAGE_MARKER.SPLIT);
     this.callbacks.push(function(err, val){
         if(callback) callback(err, val);
     });
-    var buff = new Buffer(cmd + MESSAGE_MARKER.END);
-    this.cl.write(Buffer.concat([
-        new Buffer(cmd + MESSAGE_MARKER.END),
-        val,
-        new Buffer(MESSAGE_MARKER.END)
-    ]));
+    this._sendtext(cmd);
+    this._sendtext(MESSAGE_MARKER.END);
+    this._sendbinary(val);
+    this._sendtext(MESSAGE_MARKER.END);
+    this.send();
 }
 
 TextProtocol.prototype.get = function(key, callback ){
     var self = this;
-    var cmd = [CMD.GET, key].join(MESSAGE_MARKER.SPLIT);
+    var cmd = [CMD.GET, key].
+        map(function(v){return v.toString()}).
+        join(MESSAGE_MARKER.SPLIT);
     this.callbacks.push(function(err, val){
         if(!callback) return;
         if(err) return callback(err);
         if(self.encode === 'utf8') callback(err, val.toString(self.encode));
         else callback(err, val);
     });
-    this.cl.write(cmd);
-    this.cl.write(MESSAGE_MARKER.END);
+    this._sendtext(cmd);
+    this._sendtext(MESSAGE_MARKER.END);
+    this.send();
 }
 TextProtocol.prototype.delete = function(key, callback ){
     var self = this;
-    var cmd = [CMD.DELETE, key].join(MESSAGE_MARKER.SPLIT);
+    var cmd = [CMD.DELETE, key].
+        map(function(v){return v.toString()}).
+        join(MESSAGE_MARKER.SPLIT);
     this.callbacks.push(function(err, val){
         if(callback) callback(err, val);
     });
-    this.cl.write(cmd);
-    this.cl.write(MESSAGE_MARKER.END);
+    this._sendtext(cmd);
+    this._sendtext(MESSAGE_MARKER.END);
+    this.send();
+}
+TextProtocol.prototype.inc = function(key, val, callback ){
+    var self = this;
+    var cmd = [CMD.INC, key, val].
+        map(function(v){return v.toString()}).
+        join(MESSAGE_MARKER.SPLIT);
+    this.callbacks.push(function(err, val){
+        if(callback) callback(err, val);
+    });
+    this._sendtext(cmd);
+    this._sendtext(MESSAGE_MARKER.END);
+    this.send();
+}
+TextProtocol.prototype.dec = function(key, val, callback ){
+    var self = this;
+    var cmd = [CMD.DEC, key, val].
+        map(function(v){return v.toString()}).
+        join(MESSAGE_MARKER.SPLIT);
+    this.callbacks.push(function(err, val){
+        if(callback) callback(err, val);
+    });
+    this._sendtext(cmd);
+    this._sendtext(MESSAGE_MARKER.END);
+    this.send();
 }
 TextProtocol.prototype.stats = function( callback ){
     var self = this;
-    var cmd = [CMD.STATS].join(MESSAGE_MARKER.SPLIT);
+    var cmd = [CMD.STATS].
+        map(function(v){return v.toString()}).
+        join(MESSAGE_MARKER.SPLIT);
     this.callbacks.push(function(err,val){
         if(callback) callback(err, val);
     });
-    this.cl.write(cmd);
-    this.cl.write(MESSAGE_MARKER.END);
+    this._sendtext(cmd);
+    this._sendtext(MESSAGE_MARKER.END);
+    this.send();
 }
 

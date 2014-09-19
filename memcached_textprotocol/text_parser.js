@@ -95,6 +95,8 @@ var cmdcallback = function(ctx, params){
         if(f = params.results.shift()) f(new Error(w.join(' ')));
     }else if(strcmpleft(params.data, 'ERROR')){
         throw new Error('Protocol Error');
+    }else if(params.data.match(/[0-9]+/)){
+        if(f = params.results.shift()) f(null, params.data);
     }
     ctx.state = CTX.CMD;
     return cmdparser(ctx, params.results, cmdcallback);
